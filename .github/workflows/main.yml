@@ -1,0 +1,133 @@
+name: RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  secure-rdp:
+    runs-on: windows-latest
+    timeout-minutes: 3600
+
+    steps:
+      - name: Enable RDP + Firewall + Prevent Disconnects
+        shell: powershell
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "SecurityLayer" -Value 0 -Force
+          netsh advfirewall firewall delete rule name="AllowRDP" >$null 2>&1
+          netsh advfirewall firewall add rule name="AllowRDP" dir=in action=allow protocol=TCP localport=3389
+          $regPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'
+          if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+          Set-ItemProperty -Path $regPath -Name "MaxDisconnectionTime" -Value 0 -Type DWord -Force
+          Set-ItemProperty -Path $regPath -Name "MaxIdleTime" -Value 0 -Type DWord -Force
+          Set-ItemProperty -Path $regPath -Name "MaxSessionTime" -Value 0 -Type DWord -Force
+          Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "ScreenSaveTimeOut" -Value "0" -Force
+          Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "ScreenSaverIsSecure" -Value "0" -Force
+          Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "SCRNSAVE.EXE" -Value "" -Force
+          powercfg /change standby-timeout-ac 0
+          powercfg /change monitor-timeout-ac 0
+          powercfg /change disk-timeout-ac 0
+          powercfg /hibernate off
+          Restart-Service TermService -Force
+
+      - name: Create RDP User (Password = 1234)
+        shell: powershell
+        run: |
+          secedit /export /cfg $env:TEMP\secpol.cfg
+          (Get-Content $env:TEMP\secpol.cfg).Replace("PasswordComplexity = 1","PasswordComplexity = 0") | Set-Content $env:TEMP\secpol.cfg
+          secedit /configure /db $env:windir\security\local.sdb /cfg $env:TEMP\secpol.cfg /areas SECURITYPOLICY
+          gpupdate /force
+          $password = "1234"
+          $securePass = ConvertTo-SecureString $password -AsPlainText -Force
+          if (Get-LocalUser -Name "RDP" -ErrorAction SilentlyContinue) { Remove-LocalUser -Name "RDP" }
+          New-LocalUser -Name "RDP" -Password $securePass -AccountNeverExpires
+          Add-LocalGroupMember -Group "Administrators" -Member "RDP"
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDP"
+          echo "RDP_CREDS=User: RDP | Password: $password" >> $env:GITHUB_ENV
+
+      - name: Install Tailscale
+        shell: powershell
+        run: |
+          $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
+          $installerPath = "$env:TEMP\tailscale.msi"
+          Invoke-WebRequest -Uri $tsUrl -OutFile $installerPath -UseBasicParsing
+          Start-Process msiexec.exe -ArgumentList "/i", "`"$installerPath`"", "/quiet", "/norestart" -Wait
+          Remove-Item $installerPath -Force
+
+      - name: Start Tailscale
+        shell: powershell
+        run: |
+          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID
+          $tsIP = $null
+          for ($i=0; $i -lt 10; $i++) {
+            $tsIP = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
+            if ($tsIP) { break }
+            Start-Sleep -Seconds 5
+          }
+          if (-not $tsIP) { Write-Error "Tailscale IP not assigned"; exit 1 }
+          echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
+          Write-Host "Tailscale IP: $tsIP"
+
+      - name: Start SOCKS5 Proxy (gost) on port 1080
+        shell: powershell
+        run: |
+          $tsIP = $env:TAILSCALE_IP
+          if (-not $tsIP) { Write-Error "TAILSCALE_IP not found"; exit 1 }
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          $gostUrl = "https://github.com/go-gost/gost/releases/download/v3.0.0/gost_3.0.0_windows_amd64.zip"
+          $zipPath = "$env:TEMP\gost.zip"
+          $extractPath = "C:\gost"
+          Invoke-WebRequest -Uri $gostUrl -OutFile $zipPath -UseBasicParsing
+          Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+          $exePath = (Get-ChildItem $extractPath -Recurse | Where-Object {$_.Name -eq "gost.exe"}).FullName
+          netsh advfirewall firewall delete rule name="SOCKS5-1080" >$null 2>&1
+          netsh advfirewall firewall add rule name="SOCKS5-1080" dir=in action=allow protocol=TCP localport=1080
+          Start-Process -FilePath $exePath -ArgumentList '-L=:1080' -WindowStyle Hidden
+          Write-Host "SOCKS5 proxy listening on: $tsIP:1080"
+
+      - name: Install Visual Studio Code + Python Deps
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          choco install -y vscode python
+          pip install requests PyQt5 playwright
+          playwright install
+
+      - name: Create Project Folder and Files
+        shell: powershell
+        run: |
+          $downloadPath = [Environment]::GetFolderPath("UserProfile") + "\Downloads\saranggggg"
+          New-Item -ItemType Directory -Path $downloadPath -Force | Out-Null
+          New-Item -Path "$downloadPath\humanex.py" -ItemType File -Force | Out-Null
+          New-Item -Path "$downloadPath\user_agent.txt" -ItemType File -Force | Out-Null
+          New-Item -Path "$downloadPath\proxy.txt" -ItemType File -Force | Out-Null
+          New-Item -Path "$downloadPath\insuranceRPA.json" -ItemType File -Force | Out-Null
+          Write-Host "Created folder and files inside Downloads\saranggggg"
+
+      - name: Verify RDP
+        shell: powershell
+        run: |
+          $tsIP = $env:TAILSCALE_IP
+          Write-Host "Tailscale IP: $tsIP"
+          $test = Test-NetConnection -ComputerName $tsIP -Port 3389
+          if (-not $test.TcpTestSucceeded) { exit 1 }
+          Write-Host "✅ RDP Port reachable"
+
+      - name: Keep Session Alive
+        shell: powershell
+        run: |
+          $tsIP = $env:TAILSCALE_IP
+          Write-Host "`n=== RDP ACCESS ==="
+          Write-Host "Address: $tsIP"
+          Write-Host "Username: RDP"
+          Write-Host "Password: 1234"
+          Write-Host "SOCKS5 Proxy: $tsIP:1080"
+          Write-Host "VSCode: Installed"
+          Write-Host "==================`n"
+          while ($true) {
+            Write-Host "[$(Get-Date)] RDP Active"
+            Start-Sleep -Seconds 300
+          }
