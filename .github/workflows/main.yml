@@ -136,10 +136,12 @@ jobs:
         shell: powershell
         run: |
           $tsIP = $env:TAILSCALE_IP
-          Write-Host "`n=== RDP ACCESS READY ==="
-          Write-Host "💻 IP: $tsIP"
-          Write-Host "👤 User: RDP"
-          Write-Host "🔑 Pass: 1234"
-          Write-Host "`nThis session will stay alive for 6 hours."
+          Write-Host ""
+          Write-Host "=== RDP ACCESS READY ==="
+          Write-Host "IP: $tsIP"
+          Write-Host "User: RDP"
+          Write-Host "Pass: 1234"
+          Write-Host ""
+          Write-Host "This session will stay alive for 6 hours."
           Write-Host "Use VSCode via Tailscale IP or connect over RDP."
-          Start-Sleep -Seconds 21600  # 6 hours
+          Start-Sleep -Seconds 21600
