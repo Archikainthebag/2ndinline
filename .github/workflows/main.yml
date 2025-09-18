@@ -86,26 +86,29 @@ jobs:
           Start-Process -FilePath $exePath -ArgumentList '-L=:1080' -WindowStyle Hidden
           Write-Host "SOCKS5 proxy listening on: $tsIP:1080"
 
-      - name: Install Visual Studio Code + Python Deps
+      - name: Install Visual Studio Code + Python + Extensions + Playwright
         shell: powershell
         run: |
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           choco install -y vscode python
+          refreshenv
+          python -m pip install --upgrade pip
           pip install requests PyQt5 playwright
           playwright install
+          code --install-extension ms-python.python --force
 
       - name: Create Project Folder and Files
         shell: powershell
         run: |
-          $downloadPath = [Environment]::GetFolderPath("UserProfile") + "\Downloads\saranggggg"
+          $downloadPath = "$env:USERPROFILE\Downloads\saranggggg"
           New-Item -ItemType Directory -Path $downloadPath -Force | Out-Null
-          New-Item -Path "$downloadPath\humanex.py" -ItemType File -Force | Out-Null
-          New-Item -Path "$downloadPath\user_agent.txt" -ItemType File -Force | Out-Null
-          New-Item -Path "$downloadPath\proxy.txt" -ItemType File -Force | Out-Null
-          New-Item -Path "$downloadPath\insuranceRPA.json" -ItemType File -Force | Out-Null
-          Write-Host "Created folder and files inside Downloads\saranggggg"
+          New-Item -ItemType File -Path "$downloadPath\humanex.py" -Force | Out-Null
+          New-Item -ItemType File -Path "$downloadPath\user_agent.txt" -Force | Out-Null
+          New-Item -ItemType File -Path "$downloadPath\proxy.txt" -Force | Out-Null
+          New-Item -ItemType File -Path "$downloadPath\insuranceRPA.json" -Force | Out-Null
+          Write-Host "✅ Created project folder and files at: $downloadPath"
 
       - name: Verify RDP
         shell: powershell
@@ -126,6 +129,7 @@ jobs:
           Write-Host "Password: 1234"
           Write-Host "SOCKS5 Proxy: $tsIP:1080"
           Write-Host "VSCode: Installed"
+          Write-Host "Python Extension: Installed"
           Write-Host "==================`n"
           while ($true) {
             Write-Host "[$(Get-Date)] RDP Active"
