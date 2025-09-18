@@ -91,12 +91,25 @@ jobs:
         run: |
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+          # Install Chocolatey
           Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+          # Install VSCode and Python
           choco install -y vscode python
-          refreshenv
+
+          # Add VSCode CLI to PATH manually
+          $vscodePath = "C:\Program Files\Microsoft VS Code\bin"
+          $env:PATH += ";$vscodePath"
+
+          # Install pip packages
           python -m pip install --upgrade pip
           pip install requests PyQt5 playwright
+
+          # Install Playwright browsers
           playwright install
+
+          # Install VSCode Python extension
           code --install-extension ms-python.python --force
 
       - name: Create Project Folder and Files
@@ -104,11 +117,11 @@ jobs:
         run: |
           $downloadPath = "$env:USERPROFILE\Downloads\saranggggg"
           New-Item -ItemType Directory -Path $downloadPath -Force | Out-Null
-          New-Item -ItemType File -Path "$downloadPath\humanex.py" -Force | Out-Null
-          New-Item -ItemType File -Path "$downloadPath\user_agent.txt" -Force | Out-Null
-          New-Item -ItemType File -Path "$downloadPath\proxy.txt" -Force | Out-Null
-          New-Item -ItemType File -Path "$downloadPath\insuranceRPA.json" -Force | Out-Null
-          Write-Host "✅ Created project folder and files at: $downloadPath"
+          New-Item -Path "$downloadPath\humanex.py" -ItemType File -Force | Out-Null
+          New-Item -Path "$downloadPath\user_agent.txt" -ItemType File -Force | Out-Null
+          New-Item -Path "$downloadPath\proxy.txt" -ItemType File -Force | Out-Null
+          New-Item -Path "$downloadPath\insuranceRPA.json" -ItemType File -Force | Out-Null
+          Write-Host "✅ Created folder and files in: $downloadPath"
 
       - name: Verify RDP
         shell: powershell
@@ -123,15 +136,10 @@ jobs:
         shell: powershell
         run: |
           $tsIP = $env:TAILSCALE_IP
-          Write-Host "`n=== RDP ACCESS ==="
-          Write-Host "Address: $tsIP"
-          Write-Host "Username: RDP"
-          Write-Host "Password: 1234"
-          Write-Host "SOCKS5 Proxy: $tsIP:1080"
-          Write-Host "VSCode: Installed"
-          Write-Host "Python Extension: Installed"
-          Write-Host "==================`n"
-          while ($true) {
-            Write-Host "[$(Get-Date)] RDP Active"
-            Start-Sleep -Seconds 300
-          }
+          Write-Host "`n=== RDP ACCESS READY ==="
+          Write-Host "💻 IP: $tsIP"
+          Write-Host "👤 User: RDP"
+          Write-Host "🔑 Pass: 1234"
+          Write-Host "`nThis session will stay alive for 6 hours."
+          Write-Host "Use VSCode via Tailscale IP or connect over RDP."
+          Start-Sleep -Seconds 21600  # 6 hours
