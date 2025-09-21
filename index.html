@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2ndInLine - Unblocked Games Hub</title>
+    <meta name="description" content="Play the best unblocked games at school or work. Huge collection of free games that bypass network restrictions.">
+    <meta name="keywords" content="unblocked games, school games, free games, online games, gaming">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>2ndInLine</h1>
+                <span class="tagline">Unblocked Games Hub</span>
+            </div>
+            <nav class="nav">
+                <button class="menu-toggle" aria-label="Toggle menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <ul class="nav-list">
+                    <li><a href="#home" class="nav-link active">Home</a></li>
+                    <li><a href="#action" class="nav-link">Action</a></li>
+                    <li><a href="#puzzle" class="nav-link">Puzzle</a></li>
+                    <li><a href="#sports" class="nav-link">Sports</a></li>
+                    <li><a href="#racing" class="nav-link">Racing</a></li>
+                    <li><a href="#strategy" class="nav-link">Strategy</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="hero">
+            <div class="container">
+                <h2>Play Unblocked Games Anywhere</h2>
+                <p>Access hundreds of games that work at school, work, or anywhere with network restrictions.</p>
+                <div class="search-container">
+                    <input type="text" id="searchInput" placeholder="Search for games..." class="search-input">
+                    <button class="search-btn" aria-label="Search">🔍</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="featured-games">
+            <div class="container">
+                <h3>Featured Games</h3>
+                <div class="games-grid" id="featuredGames">
+                    <!-- Featured games will be populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <section class="categories">
+            <div class="container">
+                <h3>Game Categories</h3>
+                <div class="category-filters">
+                    <button class="filter-btn active" data-category="all">All Games</button>
+                    <button class="filter-btn" data-category="action">Action</button>
+                    <button class="filter-btn" data-category="puzzle">Puzzle</button>
+                    <button class="filter-btn" data-category="sports">Sports</button>
+                    <button class="filter-btn" data-category="racing">Racing</button>
+                    <button class="filter-btn" data-category="strategy">Strategy</button>
+                    <button class="filter-btn" data-category="arcade">Arcade</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="games-section">
+            <div class="container">
+                <div class="games-grid" id="gamesGrid">
+                    <!-- Games will be populated by JavaScript -->
+                </div>
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="loadMoreBtn">Load More Games</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>2ndInLine</h4>
+                    <p>Your go-to destination for unblocked games. Play anywhere, anytime.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Categories</h4>
+                    <ul>
+                        <li><a href="#action">Action Games</a></li>
+                        <li><a href="#puzzle">Puzzle Games</a></li>
+                        <li><a href="#sports">Sports Games</a></li>
+                        <li><a href="#racing">Racing Games</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Info</h4>
+                    <ul>
+                        <li><a href="#about">About Us</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                        <li><a href="#privacy">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 2ndInLine. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
